@@ -1,0 +1,85 @@
+---
+title: "C4.5"
+author: "221810376_Kiran Aldi P. Hasibuan"
+date: "11/5/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r message=FALSE, warning=FALSE}
+library(RWeka)
+library(party)
+library(partykit)
+library(caret)
+### Load Data
+heart <- read.csv("Heart_Disease_Classification.csv")
+
+### Pre-processing Data
+#Mengecek apakah ada data NA
+sapply(heart, function(x) sum(is.na(x)))
+
+### Kategorisasi Semua Atribut
+#age
+heart$age <- as.factor(heart$age)
+#sex
+heart$sex <- factor(heart$sex, levels = c(1,0), labels = c( "Male", "Female"))
+#cp
+heart$cp <- factor(heart$cp, levels = c(3,2,1,0), labels = c( "Asymptotic", "non-anginal pain", "atypical angina", "typical angina"))
+#trestbps
+heart$trestbps <- cut(heart$trestbps, breaks = c(-Inf, 120, 129, 139, 159, 179, Inf ), labels = c("Optimal", "Normal", "High Normal", "Hypertension stage 1", "Hypertension stage 2", "Hypertension stage 3"))
+#chol
+heart$chol <- cut(heart$chol, breaks = c(-Inf, 200, 240, Inf ), labels = c("Desirable", "Borderline high", "High"))
+#fbs
+heart$fbs <- factor(heart$fbs, levels = c(1,0), labels = c( "true", "false"))
+#restecg
+heart$restecg <- factor(heart$restecg, levels = c(2,1,0), labels = c( "Left ventricular hyperthrophy", "have ST-T wave abnormality", "normal"))
+#thalach
+heart$thalach <- cut(heart$thalach, breaks = c(-Inf, 80, 100, 120, 140, 160, 180, 200, Inf), labels = c("<80", "80-100", "100-120","120-140", "140-160", "160-180","180-200", ">200"))
+#exang
+heart$exang <- factor(heart$exang, levels = c(1,0), labels = c( "yes", "no"))
+#oldpeak
+heart$oldpeak <- as.factor(heart$oldpeak)
+#slope
+heart$slope <- factor(heart$slope, levels = c(2,1,0), labels = c( "Downsloping", "Flat", "Upslopin"))
+#ca
+heart$ca <- as.factor(heart$ca)
+#thal
+heart$thal <- as.factor(heart$thal)
+#target
+heart$target <- factor(heart$target, levels = c(0,1), labels = c( "Present", "Absence"))
+
+### Split Data
+#10 Fold Cross Validation#
+#Mengambil data secara randomm
+heart<-heart[sample(nrow(heart)),]
+#Membuat 10-folds
+folds <- cut(seq(1,nrow(heart)),breaks=10,labels=FALSE)
+#Melakukan 10 fold cross validation
+for(i in 1:10){
+  #Membagi data fold menggunakan fungsi which() 
+  testIndexes <- which(folds==i,arr.ind=TRUE)
+  testData <- heart[testIndexes, ]
+  trainData <- heart[-testIndexes, ]
+}
+
+### Membuat Model
+fit_J48 <- J48(target ~ ., data = trainData)
+fit_J48_prunn <- J48(target ~ ., data=trainData, control = Weka_control(R = TRUE))
+fit_PART <- PART(target ~ ., data = trainData)
+summary(fit_J48)
+summary(fit_J48_prunn)
+summary(fit_PART)
+plot(as.party.Weka_tree(fit_J48))
+plot(fit_J48_prunn)
+
+### Confusion Matrix
+pred_fit_J48 <- predict(fit_J48, testData)
+confusionMatrix(pred_fit_J48, testData$target)
+pred_fit_J48_prunn <- predict(fit_J48_prunn, testData)
+confusionMatrix(pred_fit_J48_prunn, testData$target)
+pred_fit_PART <- predict(fit_PART, testData)
+confusionMatrix(pred_fit_PART, testData$target)
+```
+
+

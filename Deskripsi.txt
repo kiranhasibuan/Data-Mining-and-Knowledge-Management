@@ -1,0 +1,25 @@
+Konteks
+
+Kumpulan data ini berasal dari tahun 1988 dan terdiri dari empat basis data: Cleveland, Hongaria, Swiss, dan Long Beach V. Ini berisi 76 atribut, termasuk atribut yang diprediksi, tetapi semua eksperimen yang diterbitkan mengacu pada penggunaan subset dari 14 di antaranya. Bidang "target" mengacu pada keberadaan penyakit jantung pada pasien. Ini bilangan bulat bernilai 0 = tidak ada penyakit dan 1 = penyakit.
+
+Konten
+
+jumlah observasi = 1025
+
+informasi atribut:
+
+age:		usia
+sex:		jenis kelamin
+cp:		jenis nyeri dada (4 nilai)
+trestbps:	tekanan darah istirahat(resting)
+chol:		serum kolestoral dalam mg / dl
+fbs:		gula darah puasa> 120 mg / dl
+restecg:	hasil elektrokardiografi istirahat (nilai 0,1,2)
+thalach:	detak jantung maksimum tercapai
+exang:		latihan angina yang diinduksi
+oldpeak:	oldpeak = depresi ST yang disebabkan oleh olahraga relatif terhadap istirahat
+slope:		kemiringan segmen ST latihan puncak
+ca:		jumlah kapal besar (0-3) yang diwarnai dengan tepung
+thal:		thal: 0 = normal; 1 = cacat tetap; 2 = cacat yang dapat dibalik
+
+Nama dan nomor jaminan sosial pasien baru-baru ini dihapus dari database, diganti dengan nilai dummy

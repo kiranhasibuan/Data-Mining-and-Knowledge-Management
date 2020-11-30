@@ -1,0 +1,82 @@
+---
+title: "SVM"
+author: "221810376_Kiran Aldi P. Hasibuan"
+date: "11/6/2020"
+output: html_document
+---
+
+### Load Library
+Tiga library yang dibutuhkan, yaitu **tidyverse, caret, dan e1071**. Jika belum terinstall, silahkan install terlebih dahulu dengan perintah `install.packages("nama-package")`.
+
+Library **tidyverse** akan digunakan untuk plotting dan mengolah variabel. Library **e1071** digunakan untuk melakukan pemodelan SVM.  Library **caret** digunakan untuk membuat confusion matriks dan melihar akurasi model.
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(e1071)
+library(caret)
+```
+
+### Load Data
+```{r}
+heart <- read.csv("Heart_Disease_Classification.csv")
+str(heart)
+```
+
+### Konversi Data
+```{r}
+#Mengubah tipe variabel target menjadi tipe faktor
+heart$target <- factor(heart$target, levels = c(0,1), labels = c( "Present", "Absence"))
+class(heart$target)
+```
+
+### Split Data
+```{r}
+#10 Fold Cross Validation#
+#Mengambil data secara randomm
+heart<-heart[sample(nrow(heart)),]
+#Membuat 10-folds
+folds <- cut(seq(1,nrow(heart)),breaks=10,labels=FALSE)
+#Melakukan 10 fold cross validation
+for(i in 1:10){
+  #Membagi data fold menggunakan fungsi which() 
+  testIndexes <- which(folds==i,arr.ind=TRUE)
+  testData <- heart[testIndexes, ]
+  trainData <- heart[-testIndexes, ]
+}
+```
+
+### Membuat Model
+```{r}
+SVM <- svm(target~., data=trainData)
+summary(SVM)
+```
+
+### Confusion Matrix
+```{r}
+pred <- predict(SVM, testData)
+confusionMatrix(table(pred,testData$target))
+```
+
+### Mencari Model Terbaik
+```{r}
+#Performance of SVM Plot
+best_SVM <- tune(svm, target~., data=trainData,
+                     ranges = list(epsilon = seq(0,1,0.1),
+                     cost = 2^(2:9)))
+plot(best_SVM)
+summary(best_SVM)
+```
+Perhatikan nilai cost, jika cost yang ditentukan bernilai besar, bisa terjadi over-fitting, jika terlalu kecil bisa terjadi under-fitting yang berakibat rendahnya akurasi.
+
+Didapat model terbaik adalah model dengan epsilon 0 dan cost 32.
+```{r}
+bestSVM <- best_SVM$best.model
+summary(bestSVM)
+```
+
+#### Confusion Matrix Best Model
+```{r}
+pred1 <- predict(bestSVM, trainData)
+confusionMatrix(table(pred1,trainData$target))
+pred <- predict(bestSVM, testData)
+confusionMatrix(table(pred,testData$target))
+```

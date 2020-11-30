@@ -1,0 +1,108 @@
+---
+title: "Neural Network"
+author: "221810376_Kiran Aldi P. Hasibuan"
+date: "11/7/2020"
+output: html_document
+---
+
+```{r message=FALSE, warning=FALSE}
+library(tensorflow)
+library(keras)
+
+```
+
+### Load Data
+```{r}
+heart <- read.csv("Heart_Disease_Classification.csv")
+str(heart)
+```
+### Change to matrix
+```{r}
+heart <- as.matrix(heart)
+dimnames(heart) <- NULL
+str(heart)
+```
+
+### Normalize
+```{r}
+normalisasi <- function(r){
+  return((r-min(r))/(max(r)-min(r)))
+}
+
+# normalisasi semua atribut kecuali target class
+for(i in colnames(heart[-14])){
+    heart[ ,i]=normalisasi(heart[ ,i])
+}
+
+summary(heart)
+```
+# Data Partition
+```{r}
+#Mengambil data secara acak
+heart<-heart[sample(nrow(heart)),]
+#Membuat 10-folds
+folds <- cut(seq(1,nrow(heart)),breaks=10,labels=FALSE)
+#Melakukan 10 fold cross validation
+for(i in 1:10){
+  #Membagi data fold menggunakan fungsi which() 
+  testIndexes <- which(folds==i,arr.ind=TRUE)
+  testData <- heart[testIndexes, 1:13 ]
+  trainData <- heart[-testIndexes, 1:13 ]
+  testTarget <- heart[testIndexes, 14 ]
+  trainTarget <- heart[-testIndexes, 14 ]
+}
+```
+
+# One hot Encoding
+```{r}
+trainLabels <- to_categorical(trainTarget)
+testLabels <- to_categorical(testTarget)
+print(testLabels )
+```
+
+# Create sequential model
+```{r}
+model <- keras_model_sequential()
+model %>%
+  layer_dense(units = 100, activation = 'sigmoid', input_shape = c(13)) %>%
+  layer_dense(units = 10, activation = 'sigmoid') %>%
+  layer_dense(units = 2, activation = 'softmax')
+summary(model)
+```
+
+# Compile
+```{r}
+model %>%
+  compile(loss = 'categorical_crossentropy',
+          optimizer = 'adam',
+          metrics = 'accuracy')
+```
+
+Fit model
+```{r}
+history <- model %>%
+  fit(trainData,
+      trainLabels,
+      epoch = 500,
+      batch_size = 32,
+      validation_split = 0.2)
+plot(history)
+```
+
+# Predicton & confusion matrix, Evaluate model - training & testing data
+```{r}
+#Training set
+pred1 <- model%>%
+  predict_classes(trainData)
+table(Predicted = pred1, Actual = trainTarget)
+model %>%
+  evaluate(trainData, trainLabels)
+#Testing set
+pred <- model%>%
+  predict_classes(testData)
+table(Predicted = pred, Actual = testTarget)
+model %>%
+  evaluate(testData, testLabels)
+```
+
+

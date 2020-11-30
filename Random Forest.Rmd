@@ -1,0 +1,149 @@
+---
+title: "Random Forest"
+author: "221810376_Kiran Aldi P. Hasibuan"
+date: "11/6/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+### Load Library
+Tiga library yang dibutuhkan, yaitu **randomforest, psych, dan caret**. Jika belum terinstall, silahkan install terlebih dahulu dengan perintah `install.packages("nama-package")`.
+
+Library **randomforest** akan digunakan untuk membuat modelnya. Library **psych** akan digunakan untuk melihat korelasi antar variabel. Library **caret** digunakan untuk membuat confusion matriks dan melihar akurasi model.
+
+```{r message=FALSE, warning=FALSE}
+library(randomForest)
+library(caret)
+library(psych)
+```
+
+### Load Data
+```{r}
+heart <- read.csv("Heart_Disease_Classification.csv")
+str(heart)
+```
+
+### Pre-processing Data
+```{r}
+#Mengecek apakah ada data NA
+sapply(heart, function(x) sum(is.na(x)))
+```
+
+
+### Kategorisasi Semua Atribut
+```{r}
+#age
+heart$age <- as.factor(heart$age)
+#sex
+heart$sex <- factor(heart$sex, levels = c(1,0), labels = c( "Male", "Female"))
+#cp
+heart$cp <- factor(heart$cp, levels = c(3,2,1,0), labels = c( "Asymptotic", "non-anginal pain", "atypical angina", "typical angina"))
+#trestbps
+heart$trestbps <- cut(heart$trestbps, breaks = c(-Inf, 120, 129, 139, 159, 179, Inf ), labels = c("Optimal", "Normal", "High Normal", "Hypertension stage 1", "Hypertension stage 2", "Hypertension stage 3"))
+#chol
+heart$chol <- cut(heart$chol, breaks = c(-Inf, 200, 240, Inf ), labels = c("Desirable", "Borderline high", "High"))
+#fbs
+heart$fbs <- factor(heart$fbs, levels = c(1,0), labels = c( "true", "false"))
+#restecg
+heart$restecg <- factor(heart$restecg, levels = c(2,1,0), labels = c( "Left ventricular hyperthrophy", "have ST-T wave abnormality", "normal"))
+#thalach
+heart$thalach <- cut(heart$thalach, breaks = c(-Inf, 80, 100, 120, 140, 160, 180, 200, Inf), labels = c("<80", "80-100", "100-120","120-140", "140-160", "160-180","180-200", ">200"))
+#exang
+heart$exang <- factor(heart$exang, levels = c(1,0), labels = c( "yes", "no"))
+#oldpeak
+heart$oldpeak <- as.factor(heart$oldpeak)
+#slope
+heart$slope <- factor(heart$slope, levels = c(2,1,0), labels = c( "Downsloping", "Flat", "Upslopin"))
+#ca
+heart$ca <- as.factor(heart$ca)
+#thal
+heart$thal <- as.factor(heart$thal)
+#target
+heart$target <- factor(heart$target, levels = c(0,1), labels = c( "Present", "Absence"))
+str(heart)
+```
+
+
+### Pairs Plot
+```{r}
+#Melihat korelasi dari tiap variabel, kalau ada korelasi yang tinggi, hilangkan salah satu variabel
+pairs.panels(heart)
+```
+
+### Remove Slope
+```{r}
+heart <- heart[,c(-9,-10,-11)]
+str(heart)
+sapply(heart, function(x) sum(is.na(x)))
+```
+
+### Split Data
+```{r}
+#10 Fold Cross Validation#
+#Mengambil data secara randomm
+heart<-heart[sample(nrow(heart)),]
+#Membuat 10-folds
+folds <- cut(seq(1,nrow(heart)),breaks=10,labels=FALSE)
+#Melakukan 10 fold cross validation
+for(i in 1:10){
+  #Membagi data fold menggunakan fungsi which() 
+  testIndexes <- which(folds==i,arr.ind=TRUE)
+  testData <- heart[testIndexes, ]
+  trainData <- heart[-testIndexes, ]
+}
+```
+
+### Membuat Model
+```{r}
+random_forest <- randomForest(target ~ ., data=trainData)
+random_forest
+```
+Keterangan :
+
+1. Banyaknya pohon yang dibuat dari fungsi default adalah 500, jumlah pohon bisa diganti dari atribut `ntree`
+2. Banyaknya variabel yang digunakan sebagai kandidat setiap percabangan node. Pada fungsi default adalah 3, bisa diganti
+3. Dari atribut `mtry` yang mendekati optimal adalah akar dari jumlah atribut. 
+4. OOB merupakan error yang berasal dari prediksi yang salah oleh model, di mana data yang diprediksi adalah data yang tidak dimasukkan ke dalam model saat proses bootstraping
+
+### Model Evaluation
+#### Confusion Matrix
+```{r}
+pred <- predict(random_forest, testData)
+confusionMatrix(table(pred, testData$target))
+```
+
+#### melihat error rate model dengan banyak tree tertentu.
+Terlihat dari plot bahwa semakin banyak tree yang dibuat, error rate semakin asimptotik dengan nilai error tertentu
+```{r}
+plot(random_forest)
+```
+
+### Custom Tree
+```{r message=FALSE, warning=FALSE}
+# menyetel tree
+setelan<-tuneRF(trainData[,-11],
+                trainData[,11], 
+                stepFactor = 0.5, #besarnya peningkatan mtry tiap iterasi
+                plot = TRUE, 
+                ntreeTry = 100, #banyak pohon
+                trace = TRUE,  
+                improve = 0.05)
+```
+
+Terlihat dari plot setelan, OOB terendah berada pada **mtry = 6**.
+
+#### Membuat model dengan mtry = 3
+```{r message=FALSE, warning=FALSE}
+random_forest6 <- randomForest(target~., data = trainData, ntree = 100, mtry = 6, importance = TRUE, proximity = TRUE)
+random_forest6
+```
+
+#### Confusion matrix mtry = 6
+Terlihat dari model hasil perubahan mtry, akurasi model meningkat sebanyak 5%
+```{r}
+pred1 <- predict(random_forest6, trainData)
+confusionMatrix(table(pred1, trainData$target))
+pred <- predict(random_forest6, testData)
+confusionMatrix(table(pred, testData$target))
+```

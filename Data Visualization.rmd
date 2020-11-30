@@ -1,0 +1,32 @@
+---
+title: "Data Analysis"
+author: "221810376_Kiran Aldi P. Hasibuan"
+date: "11/7/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+```
+
+```{r}
+heart <- read.csv("Heart_Disease_Classification.csv")
+str(heart)
+```
+```{r}
+heart$age <- as.factor(heart$age)
+heart$target <- factor(heart$target, levels = c(0,1), labels = c( "Present", "Absence"))
+ggplot(heart, aes(age,fill = target)) + 
+  geom_bar(position=position_dodge()) +
+  labs(title = "Variation of age for each age class",x = "age",y = "count",fill = "Diagnosis of heart disease")
+```
+
+```{r}
+heart$age <- as.integer(heart$age)
+heart$sex <- factor(heart$sex, levels = c(1,0), labels = c( "Male", "Female"))
+ggplot(heart, aes(sex, age,fill = target)) + 
+  geom_bar(stat="identity", position=position_dodge()) +
+  labs(title = "Distribution Age vs Sex with the target class",x = "Sex",y = "Age",fill = "Diagnosis of heart disease")
+```
